@@ -1,44 +1,43 @@
 #!/usr/bin/python3
-"""AirBnB Clone API config file"""
+'''module api/v1/app.py:
+create Flask app; and register the blueprint app_views to Flask instance app
+'''
 
-from api.v1.views import app_views
-from flask import Flask, make_response, jsonify
-from models import storage
 from os import getenv
+from flask import Flask, jsonify
+from flask_cors import CORS
+
+from models import storage
+from api.v1.views import app_views
 
 app = Flask(__name__)
+
+# enable CORS and allow for origins:
+CORS(app, resources={r'/api/v1/*': {'origins': '0.0.0.0'}})
+
 app.register_blueprint(app_views)
 app.url_map.strict_slashes = False
 
 
 @app.teardown_appcontext
-def teardown_app(exception):
-    """
-    disconnects and ends the db session
-    at the end a request
-    """
+def teardown_engine(exception):
+    '''TearDown:
+    closes the storage on app context teardown
+    removes the current SQLAlchemy Session object after each request
+    '''
     storage.close()
 
 
+# Error handlers for expected app behavior:
 @app.errorhandler(404)
 def not_found(error):
-    """
-    Handle non existing pages
-
-    Args:
-    error: [description]
-
-    Returns:
-    JSON: json object
-    """
-
-    e = {
-        "error": "Not Found"
-    }
-    return make_response(jsonify({'error': "Not found"}), 404)
+    '''404:
+    return errmsg `Not Found`
+    '''
+    return jsonify({'error': 'Not found'}), 404
 
 
 if __name__ == '__main__':
-    host = getenv("HBNB_API_HOST", "0.0.0.0")
-    port = getenv("HBNB_API_PORT", "5000")
-    app.run(host=host, port=port)
+    HOST = getenv('HBNB_API_HOST', '0.0.0.0')
+    PORT = int(getenv('HBNB_API_PORT', 5000))
+    app.run(host=HOST, port=PORT, threaded=True)
